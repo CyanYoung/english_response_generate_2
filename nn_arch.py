@@ -29,7 +29,7 @@ def s2s_decode(x2, h1_n, vocab_num):
     return da(h2)
 
 
-def s2s(embed_input1, embed_input2, vocab_num):
+def cnn_s2s(embed_input1, embed_input2, vocab_num):
     h1_n = s2s_encode(embed_input1)
     return s2s_decode(embed_input2, h1_n, vocab_num)
 
@@ -93,6 +93,6 @@ def att_decode(x2, h1, vocab_num):
     return da2(s2)
 
 
-def att(embed_input1, embed_input2, vocab_num):
+def cnn_att(embed_input1, embed_input2, vocab_num):
     h1 = att_encode(embed_input1)
     return att_decode(embed_input2, h1, vocab_num)

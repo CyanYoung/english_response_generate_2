@@ -151,8 +151,8 @@ archs = {'s2s_encode': s2s_encode,
 funcs = {'sample': sample,
          'search': search}
 
-paths = {'s2s': 'model/s2s.h5',
-         'att': 'model/att.h5'}
+paths = {'s2s': 'model/cnn_s2s.h5',
+         'att': 'model/cnn_att.h5'}
 
 models = {'s2s_encode': load_model('s2s', embed_mat, seq_len, 'encode'),
           's2s_decode': load_model('s2s', embed_mat, seq_len, 'decode'),
