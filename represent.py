@@ -9,7 +9,10 @@ from keras.preprocessing.sequence import pad_sequences
 
 embed_len = 200
 max_vocab = 10000
+win_len = 10
 seq_len = 100
+
+bos, eos = '*', '#'
 
 path_word_vec = 'feat/word_vec.pkl'
 path_word2ind = 'model/word2ind.pkl'
@@ -27,7 +30,7 @@ def save(item, path):
         pk.dump(item, f)
 
 
-def add_flag(texts, bos, eos):
+def add_flag(texts):
     flag_texts = list()
     for text in texts:
         flag_texts.append(' '.join([bos, text, eos]))
@@ -60,14 +63,21 @@ def embed(path_word2ind, path_word_vec, path_embed):
     save(embed_mat, path_embed)
 
 
-def align(sents, path_sent, phase):
+def add_buf(seqs):
+    buf = [0] * (win_len - 1)
+    buf_seqs = list()
+    for seq in seqs.tolist():
+        buf_seqs.append(buf + seq)
+    return np.array(buf_seqs)
+
+
+def align(sents, path_sent, phase, extra):
     model = load(path_word2ind)
     seqs = model.texts_to_sequences(sents)
-    if phase == 'decode':
-        pad, trunc = ['post'] * 2
-    else:
-        pad, trunc = ['pre'] * 2
-    pad_seqs = pad_sequences(seqs, maxlen=seq_len, padding=pad, truncating=trunc)
+    loc = 'post' if phase == 'decode' else 'pre'
+    pad_seqs = pad_sequences(seqs, maxlen=seq_len, padding=loc, truncating=loc)
+    if extra:
+        pad_seqs = add_buf(pad_seqs)
     save(pad_seqs, path_sent)
 
 
@@ -75,16 +85,15 @@ def vectorize(paths, mode):
     with open(paths['data'], 'r') as f:
         pairs = json.load(f)
     text1s, text2s = zip(*pairs)
-    text1s, text2s = list(text1s), list(text2s)
-    sent1s = add_flag(text1s, bos='', eos='#')
+    sent1s, text2s = list(text1s), list(text2s)
     if mode == 'train':
-        flag_text2s = add_flag(text2s, bos='*', eos='#')
+        flag_text2s = add_flag(text2s)
         tokenize(sent1s + flag_text2s, path_word2ind)
         embed(path_word2ind, path_word_vec, path_embed)
         sent2s, labels = shift(flag_text2s)
-        align(sent1s, paths['sent1'], 'encode')
-        align(sent2s, paths['sent2'], 'decode')
-        align(labels, paths['label'], 'decode')
+        align(sent1s, paths['sent1'], 'encode', extra=False)
+        align(sent2s, paths['sent2'], 'decode', extra=True)
+        align(labels, paths['label'], 'decode', extra=False)
     else:
         save(sent1s, paths['sent1'])
         save(text2s, paths['label'])
