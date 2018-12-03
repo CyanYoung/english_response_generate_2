@@ -1,20 +1,34 @@
-from keras.layers import GRU, Dense, Dropout, Concatenate
+from keras.layers import Conv1D, GlobalMaxPooling1D
+from keras.layers import Dense, Dropout, Concatenate, RepeatVector
 
 import keras.backend as K
 from keras.engine.topology import Layer
 
 
+win_len = 5
+seq_len = 100
+
+
 def s2s_encode(x1):
-    ra = GRU(200, activation='tanh', name='encode')
-    return ra(x1)
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu')
+    mp = GlobalMaxPooling1D()
+    da = Dense(200, activation='relu')
+    h1 = ca(x1)
+    h1_n = mp(h1)
+    return da(h1_n)
 
 
 def s2s_decode(x2, h1_n, vocab_num):
-    ra = GRU(200, activation='tanh', return_sequences=True, name='decode')
-    da = Dense(vocab_num, activation='softmax', name='classify')
-    h2 = ra(x2, initial_state=h1_n)
-    h2 = Dropout(0.2)(h2)
-    return da(h2)
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu')
+    da1 = Dense(200, activation='relu')
+    da2 = Dense(vocab_num, activation='softmax')
+    buf_len = seq_len + win_len - 1
+    h1_n = RepeatVector(buf_len)(h1_n)
+    s2 = Concatenate()([x2, h1_n])
+    x = ca(s2)
+    x = da1(x)
+    x = Dropout(0.2)(x)
+    return da2(x)
 
 
 def s2s(embed_input1, embed_input2, vocab_num):
