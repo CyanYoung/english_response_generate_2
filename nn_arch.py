@@ -10,25 +10,23 @@ seq_len = 100
 
 
 def s2s_encode(x1):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu')
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='encode1')
     mp = GlobalMaxPooling1D()
-    da = Dense(200, activation='relu')
+    da = Dense(200, activation='relu', name='encode2')
     h1 = ca(x1)
     h1_n = mp(h1)
     return da(h1_n)
 
 
 def s2s_decode(x2, h1_n, vocab_num):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu')
-    da1 = Dense(200, activation='relu')
-    da2 = Dense(vocab_num, activation='softmax')
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='decode')
+    da = Dense(vocab_num, activation='softmax', name='classify')
     buf_len = seq_len + win_len - 1
     h1_n = RepeatVector(buf_len)(h1_n)
-    s2 = Concatenate()([x2, h1_n])
-    x = ca(s2)
-    x = da1(x)
-    x = Dropout(0.2)(x)
-    return da2(x)
+    h2 = Concatenate()([x2, h1_n])
+    h2 = ca(h2)
+    h2 = Dropout(0.2)(h2)
+    return da(h2)
 
 
 def s2s(embed_input1, embed_input2, vocab_num):
@@ -57,17 +55,16 @@ class Attend(Layer):
     def call(self, x):
         assert isinstance(x, list)
         h1, h2 = x
-        s1 = h1[:, :-1, :]
         c = list()
         for i in range(self.seq_len):
-            h2_i = K.repeat(h2[:, i, :], self.seq_len - 1)
-            x = K.concatenate([s1, h2_i])
+            h2_i = K.repeat(h2[:, i, :], self.seq_len)
+            x = K.concatenate([h1, h2_i])
             p = K.tanh(K.dot(x, self.w) + self.b1)
             p = K.softmax(K.dot(p, self.v) + self.b2)
             p = K.squeeze(p, axis=-1)
             p = K.repeat(p, self.embed_len)
             p = K.permute_dimensions(p, (0, 2, 1))
-            c_i = K.sum(p * s1, axis=1, keepdims=True)
+            c_i = K.sum(p * h1, axis=1, keepdims=True)
             c.append(c_i)
         return K.concatenate(c, axis=1)
 
@@ -77,19 +74,23 @@ class Attend(Layer):
 
 
 def att_encode(x1):
-    ra = GRU(200, activation='tanh', return_sequences=True, name='encode')
-    return ra(x1)
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='encode1')
+    da = Dense(200, activation='relu', name='encode2')
+    h1 = ca(x1)
+    return da(h1)
 
 
 def att_decode(x2, h1, vocab_num):
-    ra = GRU(200, activation='tanh', return_sequences=True, name='decode')
+    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='decode1')
+    da1 = Dense(200, activation='relu', name='decode2')
     attend = Attend(200, name='attend')
-    da = Dense(vocab_num, activation='softmax', name='classify')
-    h2 = ra(x2, initial_state=h1[:, -1, :])
+    da2 = Dense(vocab_num, activation='softmax', name='classify')
+    h2 = ca(x2)
+    h2 = da1(h2)
     c = attend([h1, h2])
     s2 = Concatenate()([h2, c])
     s2 = Dropout(0.2)(s2)
-    return da(s2)
+    return da2(s2)
 
 
 def att(embed_input1, embed_input2, vocab_num):
