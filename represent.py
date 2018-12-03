@@ -9,7 +9,7 @@ from keras.preprocessing.sequence import pad_sequences
 
 embed_len = 200
 max_vocab = 10000
-win_len = 10
+win_len = 5
 seq_len = 100
 
 bos, eos = '*', '#'
@@ -63,11 +63,14 @@ def embed(path_word2ind, path_word_vec, path_embed):
     save(embed_mat, path_embed)
 
 
-def add_buf(seqs):
-    buf = [0] * (win_len - 1)
+def add_buf(seqs, sym):
+    buf = [0] * int((win_len - 1) / 2)
     buf_seqs = list()
     for seq in seqs.tolist():
-        buf_seqs.append(buf + seq)
+        if sym:
+            buf_seqs.append(buf + seq + buf)
+        else:
+            buf_seqs.append(buf * 2 + seq)
     return np.array(buf_seqs)
 
 
@@ -77,7 +80,8 @@ def align(sents, path_sent, phase, extra):
     loc = 'post' if phase == 'decode' else 'pre'
     pad_seqs = pad_sequences(seqs, maxlen=seq_len, padding=loc, truncating=loc)
     if extra:
-        pad_seqs = add_buf(pad_seqs)
+        sym = False if phase == 'decode' else True
+        pad_seqs = add_buf(pad_seqs, sym)
     save(pad_seqs, path_sent)
 
 
@@ -91,7 +95,7 @@ def vectorize(paths, mode):
         tokenize(sent1s + flag_text2s, path_word2ind)
         embed(path_word2ind, path_word_vec, path_embed)
         sent2s, labels = shift(flag_text2s)
-        align(sent1s, paths['sent1'], 'encode', extra=False)
+        align(sent1s, paths['sent1'], 'encode', extra=True)
         align(sent2s, paths['sent2'], 'decode', extra=True)
         align(labels, paths['label'], 'decode', extra=False)
     else:
