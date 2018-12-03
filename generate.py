@@ -10,6 +10,8 @@ from keras.layers import Input, Embedding
 
 from keras.preprocessing.sequence import pad_sequences
 
+from preprocess import clean
+
 from nn_arch import s2s_encode, s2s_decode, att_encode, att_decode
 
 from util import load_word_re, map_item
@@ -64,7 +66,7 @@ def check(probs, cand, keep_eos):
 def sample(decode, state, cand):
     sent2 = bos
     next_word, count = '', 0
-    while next_word != eos:
+    while next_word != eos and count < max_len:
         count = count + 1
         sent2 = ' '.join([sent2, next_word])
         seq2 = word2ind.texts_to_sequences([sent2])[0]
@@ -107,7 +109,7 @@ def search(decode, state, cand):
             args = np.where(log_mat == log)
             sent_arg, ind_arg = int(args[0][0]), int(args[1][0])
             next_word = ind_words[ind_mat[sent_arg][ind_arg]]
-            if next_word != eos:
+            if next_word != eos and count < max_len:
                 next_words.append(next_word)
                 next_sent2s.append(sent2s[sent_arg])
                 log_sums.append(log)
@@ -120,6 +122,7 @@ def search(decode, state, cand):
     return fin_sent2s[max_arg][2:]
 
 
+max_len = 50
 seq_len = 100
 
 bos, eos = '*', '#'
@@ -158,7 +161,7 @@ models = {'s2s_encode': load_model('s2s', embed_mat, seq_len, 'encode'),
 
 
 def predict(text, name, mode):
-    sent1 = text.strip() + eos
+    sent1 = ' '.join([text, eos])
     sent1 = re.sub(stop_word_re, '', sent1)
     seq1 = word2ind.texts_to_sequences([sent1])[0]
     pad_seq1 = pad_sequences([seq1], maxlen=seq_len, padding='pre', truncating='pre')
@@ -172,6 +175,7 @@ def predict(text, name, mode):
 if __name__ == '__main__':
     while True:
         text = input('text: ')
+        text = clean(text)
         print('s2s: %s' % predict(text, 's2s', 'search'))
         print('att: %s' % predict(text, 'att', 'search'))
         print('s2s: %s' % predict(text, 's2s', 'sample'))

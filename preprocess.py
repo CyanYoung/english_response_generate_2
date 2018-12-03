@@ -2,6 +2,8 @@ import json
 
 import re
 
+import nltk
+
 from random import shuffle
 
 from util import load_word_re
@@ -16,13 +18,18 @@ def save(path, pairs):
         json.dump(pairs, f, ensure_ascii=False, indent=4)
 
 
+def clean(text):
+    text = re.sub(stop_word_re, '', text)
+    words = nltk.word_tokenize(text)
+    return ' '.join(words)
+
+
 def prepare(path_univ, path_train, path_test):
     pairs = list()
     with open(path_univ, 'r') as f:
         for line in f:
-            text1, text2 = line.strip().split('\t')
-            text1 = re.sub(stop_word_re, '', text1)
-            text2 = re.sub(stop_word_re, '', text2)
+            text1, text2 = line.split('\t')
+            text1, text2 = clean(text1), clean(text2)
             pairs.append((text1, text2))
     shuffle(pairs)
     bound = int(len(pairs) * 0.9)
