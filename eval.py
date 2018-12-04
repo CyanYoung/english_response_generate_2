@@ -16,7 +16,7 @@ with open(path_label, 'rb') as f:
 def test(name, sent1s, labels):
     labels = [[label.split()] for label in labels]
     preds = list()
-    for i, sent1 in enumerate(sent1s):
+    for sent1 in sent1s:
         pred = predict(sent1, name, 'search')
         preds.append(pred.split())
     print('\n%s bleu: %.2f\n' % (name, corpus_bleu(labels, preds)))
