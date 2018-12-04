@@ -12,6 +12,8 @@ from keras.preprocessing.sequence import pad_sequences
 
 from preprocess import clean
 
+from represent import add_buf
+
 from nn_arch import s2s_encode, s2s_decode, att_encode, att_decode
 
 from util import load_word_re, map_item
@@ -71,6 +73,7 @@ def sample(decode, state, cand):
         sent2 = ' '.join([sent2, next_word])
         seq2 = word2ind.texts_to_sequences([sent2])[0]
         pad_seq2 = pad_sequences([seq2], maxlen=seq_len, padding='post', truncating='post')
+        pad_seq2 = add_buf(pad_seq2, sym=False)
         step = min(count - 1, seq_len - 1)
         probs = decode.predict([pad_seq2, state])[0][step]
         max_probs, max_inds = check(probs, cand, keep_eos=True)
@@ -85,6 +88,7 @@ def sample(decode, state, cand):
 def search(decode, state, cand):
     bos_ind = [word_inds[bos]]
     pad_bos = pad_sequences([bos_ind], maxlen=seq_len, padding='post', truncating='post')
+    pad_bos = add_buf(pad_bos, sym=False)
     logs = np.log(decode.predict([pad_bos, state])[0][0])
     max_logs, max_inds = check(logs, cand, keep_eos=False)
     sent2s, log_sums = [bos] * cand, max_logs
@@ -97,6 +101,7 @@ def search(decode, state, cand):
             sent2s[i] = ' '.join([sent2s[i], next_words[i]])
             seq2 = word2ind.texts_to_sequences([sent2s[i]])[0]
             pad_seq2 = pad_sequences([seq2], maxlen=seq_len, padding='post', truncating='post')
+            pad_seq2 = add_buf(pad_seq2, sym=False)
             step = min(count - 1, seq_len - 1)
             logs = np.log(decode.predict([pad_seq2, state])[0][step])
             max_logs, max_inds = check(logs, cand, keep_eos=True)
@@ -161,10 +166,10 @@ models = {'s2s_encode': load_model('s2s', embed_mat, seq_len, 'encode'),
 
 
 def predict(text, name, mode):
-    sent1 = ' '.join([text, eos])
-    sent1 = re.sub(stop_word_re, '', sent1)
+    sent1 = re.sub(stop_word_re, '', text)
     seq1 = word2ind.texts_to_sequences([sent1])[0]
     pad_seq1 = pad_sequences([seq1], maxlen=seq_len, padding='pre', truncating='pre')
+    pad_seq1 = add_buf(pad_seq1, sym=True)
     encode = map_item(name + '_encode', models)
     state = encode.predict(pad_seq1)
     decode = map_item(name + '_decode', models)
