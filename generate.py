@@ -21,8 +21,9 @@ from util import load_word_re, map_item
 
 def define_model(name, embed_mat, seq_len, mode):
     vocab_num, embed_len = embed_mat.shape
-    embed = Embedding(input_dim=vocab_num, output_dim=embed_len, input_length=seq_len, name='embed')
-    input = Input(shape=(seq_len,))
+    buf_len = seq_len + win_len - 1
+    embed = Embedding(input_dim=vocab_num, output_dim=embed_len, input_length=buf_len, name='embed')
+    input = Input(shape=(buf_len,))
     if name == 'att':
         state = Input(shape=(seq_len, embed_len))
     else:
@@ -103,9 +104,9 @@ def search(decode, state, cand):
             pad_seq2 = pad_sequences([seq2], maxlen=seq_len, padding='post', truncating='post')
             pad_seq2 = add_buf(pad_seq2, sym=False)
             step = min(count - 1, seq_len - 1)
-            logs = np.log(decode.predict([pad_seq2, state])[0][step])
-            max_logs, max_inds = check(logs, cand, keep_eos=True)
-            max_logs = max_logs + log_sums[i]
+            probs = decode.predict([pad_seq2, state])[0][step]
+            max_probs, max_inds = check(probs, cand, keep_eos=True)
+            max_logs = np.log(max_probs) + log_sums[i]
             log_mat.append(max_logs)
             ind_mat.append(max_inds)
         max_logs = -np.sort(-np.array(log_mat), axis=None)[:cand]
@@ -128,6 +129,7 @@ def search(decode, state, cand):
 
 
 max_len = 50
+win_len = 5
 seq_len = 100
 
 bos, eos = '*', '#'
