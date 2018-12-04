@@ -174,7 +174,7 @@ def predict(text, name, mode):
     state = encode.predict(pad_seq1)
     decode = map_item(name + '_decode', models)
     func = map_item(mode, funcs)
-    return func(decode, state, cand=5)
+    return func(decode, state, cand=3)
 
 
 if __name__ == '__main__':
