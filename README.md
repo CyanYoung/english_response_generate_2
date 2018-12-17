@@ -25,7 +25,3 @@ Attend() 比较 h2_i 与 h1、对 h1 加权平均返回语境 c_i，h2_i 与 c_i
 #### 4.generate
 
 predict() 先对输入进行编码、再通过采样或搜索进行解码，check() 忽略无效词
-
-#### 5.eval
-
-通过搜索进行生成，使用 bleu 评价质量、即 n-gram 的平均重合度

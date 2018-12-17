@@ -1,7 +1,5 @@
 import pickle as pk
 
-from nltk.translate.bleu_score import corpus_bleu
-
 from generate import predict
 
 
@@ -14,12 +12,13 @@ with open(path_label, 'rb') as f:
 
 
 def test(name, sent1s, labels):
-    labels = [[label.split()] for label in labels]
     preds = list()
     for sent1 in sent1s:
         pred = predict(sent1, name, 'search')
-        preds.append(pred.split())
-    print('\n%s bleu: %.2f\n' % (name, corpus_bleu(labels, preds)))
+        preds.append(pred)
+    print('\n%s:\n' % name)
+    for sent1, pred, label in zip(sent1s, preds, labels):
+        print('{} | {} | {}'.format(sent1, pred, label))
 
 
 if __name__ == '__main__':
