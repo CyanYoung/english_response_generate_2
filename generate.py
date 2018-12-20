@@ -128,9 +128,9 @@ def search(decode, state, cand):
     return fin_sent2s[max_arg][2:]
 
 
-max_len = 50
 win_len = 5
 seq_len = 100
+max_len = 50
 
 bos, eos = '*', '#'
 
