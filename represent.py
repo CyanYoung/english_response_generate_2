@@ -89,17 +89,17 @@ def vectorize(paths, mode):
     with open(paths['data'], 'r') as f:
         pairs = json.load(f)
     text1s, text2s = zip(*pairs)
-    sent1s, text2s = list(text1s), list(text2s)
+    text1s, text2s = list(text1s), list(text2s)
     if mode == 'train':
         flag_text2s = add_flag(text2s)
-        tokenize(sent1s + flag_text2s, path_word2ind)
+        tokenize(text1s + flag_text2s, path_word2ind)
         embed(path_word2ind, path_word_vec, path_embed)
         sent2s, labels = shift(flag_text2s)
-        align(sent1s, paths['sent1'], 'encode', extra=True)
+        align(text1s, paths['sent1'], 'encode', extra=True)
         align(sent2s, paths['sent2'], 'decode', extra=True)
         align(labels, paths['label'], 'decode', extra=False)
     else:
-        save(sent1s, paths['sent1'])
+        save(text1s, paths['sent1'])
         save(text2s, paths['label'])
 
 
