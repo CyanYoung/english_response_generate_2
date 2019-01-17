@@ -19,6 +19,7 @@ def save(path, pairs):
 
 
 def clean(text):
+    text = text.strip().lower()
     text = re.sub(stop_word_re, '', text)
     words = nltk.word_tokenize(text)
     return ' '.join(words)

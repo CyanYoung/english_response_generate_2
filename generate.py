@@ -1,7 +1,5 @@
 import pickle as pk
 
-import re
-
 import numpy as np
 from numpy.random import choice
 
@@ -16,7 +14,7 @@ from represent import add_buf
 
 from nn_arch import s2s_encode, s2s_decode, att_encode, att_decode
 
-from util import load_word_re, map_item
+from util import map_item
 
 
 def define_model(name, embed_mat, seq_len, mode):
@@ -134,9 +132,6 @@ max_len = 50
 
 bos, eos = '<', '>'
 
-path_stop_word = 'dict/stop_word.txt'
-stop_word_re = load_word_re(path_stop_word)
-
 path_embed = 'feat/embed.pkl'
 path_word2ind = 'model/word2ind.pkl'
 with open(path_embed, 'rb') as f:
@@ -168,8 +163,7 @@ models = {'s2s_encode': load_model('s2s', embed_mat, seq_len, 'encode'),
 
 
 def predict(text, name, mode):
-    text1 = clean(text)
-    sent1 = re.sub(stop_word_re, '', text1)
+    sent1 = clean(text.strip())
     seq1 = word2ind.texts_to_sequences([sent1])[0]
     pad_seq1 = pad_sequences([seq1], maxlen=seq_len, padding='pre', truncating='pre')
     pad_seq1 = add_buf(pad_seq1, sym=True)
