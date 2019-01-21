@@ -15,10 +15,13 @@ def cnn_s2s(embed_input1, embed_input2, vocab_num):
 
 
 def s2s_encode(x1):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='encode1')
+    conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
+    gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
     mp = GlobalMaxPooling1D()
-    da = Dense(200, activation='relu', name='encode2')
-    h1 = ca(x1)
+    da = Dense(200, activation='relu', name='encode')
+    x1 = conv(x1)
+    g = gate(x1)
+    h1 = Multiply()([x1, g])
     h1_n = mp(h1)
     return da(h1_n)
 
@@ -26,16 +29,14 @@ def s2s_encode(x1):
 def s2s_decode(x2, h1_n, vocab_num):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
-    da1 = Dense(200, activation='relu', name='classify1')
-    da2 = Dense(vocab_num, activation='softmax', name='classify2')
-    h1_n = RepeatVector(buf_len)(h1_n)
-    h2 = Concatenate()([x2, h1_n])
-    h2 = conv(h2)
-    g = gate(h2)
-    h2 = Multiply()([h2, g])
-    h2 = da1(h2)
-    h2 = Dropout(0.2)(h2)
-    return da2(h2)
+    da = Dense(vocab_num, activation='softmax', name='classify')
+    x2 = conv(x2)
+    g = gate(x2)
+    h2 = Multiply()([x2, g])
+    h1_n = RepeatVector(seq_len)(h1_n)
+    s2 = Concatenate()([h2, h1_n])
+    s2 = Dropout(0.2)(s2)
+    return da(s2)
 
 
 class Attend(Layer):
@@ -83,20 +84,24 @@ def cnn_att(embed_input1, embed_input2, vocab_num):
 
 
 def att_encode(x1):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='encode1')
-    da = Dense(200, activation='relu', name='encode2')
-    h1 = ca(x1)
+    conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
+    gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
+    da = Dense(200, activation='relu', name='encode')
+    x1 = conv(x1)
+    g = gate(x1)
+    h1 = Multiply()([x1, g])
     return da(h1)
 
 
 def att_decode(x2, h1, vocab_num):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='decode1')
-    da1 = Dense(200, activation='relu', name='decode2')
+    conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
+    gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
     attend = Attend(200, name='attend')
-    da2 = Dense(vocab_num, activation='softmax', name='classify')
-    h2 = ca(x2)
-    h2 = da1(h2)
+    da = Dense(vocab_num, activation='softmax', name='classify')
+    x2 = conv(x2)
+    g = gate(x2)
+    h2 = Multiply()([x2, g])
     c = attend([h1, h2])
     s2 = Concatenate()([h2, c])
     s2 = Dropout(0.2)(s2)
-    return da2(s2)
+    return da(s2)
