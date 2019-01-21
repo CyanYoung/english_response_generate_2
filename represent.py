@@ -9,7 +9,7 @@ from keras.preprocessing.sequence import pad_sequences
 
 embed_len = 200
 max_vocab = 10000
-win_len = 5
+win_len = 7
 seq_len = 100
 
 bos, eos = '<', '>'

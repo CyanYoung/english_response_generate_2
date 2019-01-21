@@ -5,10 +5,8 @@ import keras.backend as K
 from keras.engine.topology import Layer
 
 
-win_len = 5
+win_len = 7
 seq_len = 100
-
-buf_len = seq_len + win_len - 1
 
 
 def cnn_s2s(embed_input1, embed_input2, vocab_num):
