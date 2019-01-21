@@ -1,5 +1,5 @@
-from keras.layers import Conv1D, GlobalMaxPooling1D
-from keras.layers import Dense, Dropout, Concatenate, RepeatVector
+from keras.layers import Conv1D, GlobalMaxPooling1D, Dense
+from keras.layers import Dropout, Multiply, Concatenate, RepeatVector
 
 import keras.backend as K
 from keras.engine.topology import Layer
@@ -7,6 +7,13 @@ from keras.engine.topology import Layer
 
 win_len = 5
 seq_len = 100
+
+buf_len = seq_len + win_len - 1
+
+
+def cnn_s2s(embed_input1, embed_input2, vocab_num):
+    h1_n = s2s_encode(embed_input1)
+    return s2s_decode(embed_input2, h1_n, vocab_num)
 
 
 def s2s_encode(x1):
@@ -19,19 +26,18 @@ def s2s_encode(x1):
 
 
 def s2s_decode(x2, h1_n, vocab_num):
-    ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='decode')
-    da = Dense(vocab_num, activation='softmax', name='classify')
-    buf_len = seq_len + win_len - 1
+    conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
+    gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
+    da1 = Dense(200, activation='relu', name='classify1')
+    da2 = Dense(vocab_num, activation='softmax', name='classify2')
     h1_n = RepeatVector(buf_len)(h1_n)
     h2 = Concatenate()([x2, h1_n])
-    h2 = ca(h2)
+    h2 = conv(h2)
+    g = gate(h2)
+    h2 = Multiply()([h2, g])
+    h2 = da1(h2)
     h2 = Dropout(0.2)(h2)
-    return da(h2)
-
-
-def cnn_s2s(embed_input1, embed_input2, vocab_num):
-    h1_n = s2s_encode(embed_input1)
-    return s2s_decode(embed_input2, h1_n, vocab_num)
+    return da2(h2)
 
 
 class Attend(Layer):
@@ -73,6 +79,11 @@ class Attend(Layer):
         return input_shape[0]
 
 
+def cnn_att(embed_input1, embed_input2, vocab_num):
+    h1 = att_encode(embed_input1)
+    return att_decode(embed_input2, h1, vocab_num)
+
+
 def att_encode(x1):
     ca = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='relu', name='encode1')
     da = Dense(200, activation='relu', name='encode2')
@@ -91,8 +102,3 @@ def att_decode(x2, h1, vocab_num):
     s2 = Concatenate()([h2, c])
     s2 = Dropout(0.2)(s2)
     return da2(s2)
-
-
-def cnn_att(embed_input1, embed_input2, vocab_num):
-    h1 = att_encode(embed_input1)
-    return att_decode(embed_input2, h1, vocab_num)
