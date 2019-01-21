@@ -86,11 +86,9 @@ def cnn_att(embed_input1, embed_input2, vocab_num):
 def att_encode(x1):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate')
-    da = Dense(200, activation='relu', name='encode')
     x1 = conv(x1)
     g = gate(x1)
-    h1 = Multiply()([x1, g])
-    return da(h1)
+    return Multiply()([x1, g])
 
 
 def att_decode(x2, h1, vocab_num):
