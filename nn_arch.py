@@ -18,7 +18,7 @@ def s2s_encode(x1):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv1')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate1')
     mp = GlobalMaxPooling1D()
-    da = Dense(200, activation='relu', name='encode')
+    da = Dense(200, activation='relu', name='encode1')
     g = gate(x1)
     x1 = conv(x1)
     h1 = Multiply()([x1, g])
@@ -29,7 +29,7 @@ def s2s_encode(x1):
 def s2s_decode(x2, h1_n, vocab_num):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv2')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate2')
-    da1 = Dense(200, activation='relu', name='encode')
+    da1 = Dense(200, activation='relu', name='encode2')
     da2 = Dense(vocab_num, activation='softmax', name='classify')
     g = gate(x2)
     x2 = conv(x2)
@@ -88,7 +88,7 @@ def cnn_att(embed_input1, embed_input2, vocab_num):
 def att_encode(x1):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv1')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate1')
-    da = Dense(200, activation='relu', name='encode')
+    da = Dense(200, activation='relu', name='encode1')
     g = gate(x1)
     x1 = conv(x1)
     h1 = Multiply()([x1, g])
@@ -98,7 +98,7 @@ def att_encode(x1):
 def att_decode(x2, h1, vocab_num):
     conv = Conv1D(filters=128, kernel_size=win_len, padding='valid', name='conv2')
     gate = Conv1D(filters=128, kernel_size=win_len, padding='valid', activation='sigmoid', name='gate2')
-    da1 = Dense(200, activation='relu', name='encode')
+    da1 = Dense(200, activation='relu', name='encode2')
     attend = Attend(200, name='attend')
     da2 = Dense(vocab_num, activation='softmax', name='classify')
     g = gate(x2)
