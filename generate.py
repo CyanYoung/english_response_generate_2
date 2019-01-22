@@ -126,7 +126,7 @@ def search(decode, state, cand):
     return fin_sent2s[max_arg][2:]
 
 
-win_len = 5
+win_len = 7
 seq_len = 100
 max_len = 50
 
