@@ -1,4 +1,4 @@
-## English Dialogue Generate 2018-11
+## English Response Generate 2018-11
 
 #### 1.preprocess
 
