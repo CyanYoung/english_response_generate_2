@@ -25,11 +25,6 @@ def load(path):
     return item
 
 
-def save(item, path):
-    with open(path, 'wb') as f:
-        pk.dump(item, f)
-
-
 def add_flag(texts):
     flag_texts = list()
     for text in texts:
@@ -46,7 +41,8 @@ def shift(flag_texts):
 def tokenize(texts, path_word2ind):
     model = Tokenizer(num_words=max_vocab, filters='', lower=True, oov_token='oov')
     model.fit_on_texts(texts)
-    save(model, path_word2ind)
+    with open(path_word2ind, 'wb') as f:
+        pk.dump(model, f)
 
 
 def embed(path_word2ind, path_word_vec, path_embed):
@@ -60,7 +56,8 @@ def embed(path_word2ind, path_word_vec, path_embed):
         if word in vocab:
             if ind < max_vocab:
                 embed_mat[ind] = word_vecs[word]
-    save(embed_mat, path_embed)
+    with open(path_embed, 'wb') as f:
+        pk.dump(embed_mat, f)
 
 
 def add_buf(seqs, sym):
@@ -82,7 +79,8 @@ def align(sents, path_sent, phase, extra):
     if extra:
         sym = False if phase == 'decode' else True
         pad_seqs = add_buf(pad_seqs, sym)
-    save(pad_seqs, path_sent)
+    with open(path_sent, 'wb') as f:
+        pk.dump(pad_seqs, f)
 
 
 def vectorize(paths, mode):
@@ -90,17 +88,14 @@ def vectorize(paths, mode):
         pairs = json.load(f)
     text1s, text2s = zip(*pairs)
     text1s, text2s = list(text1s), list(text2s)
+    flag_text2s = add_flag(text2s)
     if mode == 'train':
-        flag_text2s = add_flag(text2s)
         tokenize(text1s + flag_text2s, path_word2ind)
         embed(path_word2ind, path_word_vec, path_embed)
-        sent2s, labels = shift(flag_text2s)
-        align(text1s, paths['sent1'], 'encode', extra=True)
-        align(sent2s, paths['sent2'], 'decode', extra=True)
-        align(labels, paths['label'], 'decode', extra=False)
-    else:
-        save(text1s, paths['sent1'])
-        save(text2s, paths['label'])
+    sent2s, labels = shift(flag_text2s)
+    align(text1s, paths['sent1'], 'encode', extra=True)
+    align(sent2s, paths['sent2'], 'decode', extra=True)
+    align(labels, paths['label'], 'decode', extra=False)
 
 
 if __name__ == '__main__':
@@ -112,5 +107,6 @@ if __name__ == '__main__':
     vectorize(paths, 'train')
     paths['data'] = 'data/test.json'
     paths['sent1'] = 'feat/sent1_test.pkl'
+    paths['sent2'] = 'feat/sent2_test.pkl'
     paths['label'] = 'feat/label_test.pkl'
     vectorize(paths, 'test')
