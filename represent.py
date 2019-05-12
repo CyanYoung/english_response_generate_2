@@ -19,12 +19,6 @@ path_word2ind = 'model/word2ind.pkl'
 path_embed = 'feat/embed.pkl'
 
 
-def load(path):
-    with open(path, 'rb') as f:
-        item = pk.load(f)
-    return item
-
-
 def add_flag(texts):
     flag_texts = list()
     for text in texts:
@@ -38,17 +32,12 @@ def shift(flag_texts):
     return sents, labels
 
 
-def tokenize(texts, path_word2ind):
+def embed(texts, path_word_vec, path_embed):
     model = Tokenizer(num_words=max_vocab, filters='', lower=True, oov_token='oov')
     model.fit_on_texts(texts)
-    with open(path_word2ind, 'wb') as f:
-        pk.dump(model, f)
-
-
-def embed(path_word2ind, path_word_vec, path_embed):
-    model = load(path_word2ind)
     word_inds = model.word_index
-    word_vecs = load(path_word_vec)
+    with open(path_word_vec, 'rb') as f:
+        word_vecs = pk.load(f)
     vocab = word_vecs.keys()
     vocab_num = min(max_vocab + 1, len(word_inds) + 1)
     embed_mat = np.zeros((vocab_num, embed_len))
@@ -72,7 +61,8 @@ def add_buf(seqs, sym):
 
 
 def align(sents, path_sent, phase, extra):
-    model = load(path_word2ind)
+    with open(path_word2ind, 'rb') as f:
+        model = pk.load(f)
     seqs = model.texts_to_sequences(sents)
     loc = 'post' if phase == 'decode' else 'pre'
     pad_seqs = pad_sequences(seqs, maxlen=seq_len, padding=loc, truncating=loc)
@@ -90,8 +80,7 @@ def vectorize(paths, mode):
     text1s, text2s = list(text1s), list(text2s)
     flag_text2s = add_flag(text2s)
     if mode == 'train':
-        tokenize(text1s + flag_text2s, path_word2ind)
-        embed(path_word2ind, path_word_vec, path_embed)
+        embed(text1s + flag_text2s, path_word_vec, path_embed)
     sent2s, labels = shift(flag_text2s)
     align(text1s, paths['sent1'], 'encode', extra=True)
     align(sent2s, paths['sent2'], 'decode', extra=True)
